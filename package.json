@@ -1,0 +1,19 @@
+{
+  "name": "presign-api",
+  "version": "1.0.0",
+  "description": "Railway S3 presigned URL API for n8n",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.700.0",
+    "@aws-sdk/s3-request-presigner": "^3.700.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0"
+  }
+}
