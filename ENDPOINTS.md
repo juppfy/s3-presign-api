@@ -59,14 +59,15 @@ uploads/9f3a1c0b4d8e23d1d2f9f01a2b3c4d5e-song.mp3
   "key": "uploads/9f3a1c0b4d8e23d1d2f9f01a2b3c4d5e-song.mp3",
   "url": "https://bucket-url/presigned-url...",
   "bucket": "your-bucket-name",
-  "expiresInSeconds": 6739200
+  "expiresInSeconds": 7776000
 }
 ```
 
 Notes:
 
 - `expiresInSeconds` is the presigned URL expiry in seconds.
-- Default is 78 days (6,739,200 seconds) unless overridden by `PRESIGN_EXPIRY_SECONDS`.
+- Default is 90 days (7,776,000 seconds, Railway max) unless overridden by `PRESIGN_EXPIRY_SECONDS`.
+- If `PRESIGN_EXPIRY_SECONDS` is set higher than 90 days, it will be clamped down to 90 days.
 
 ### Error Responses
 
@@ -183,7 +184,8 @@ POST /presign
 The expiry is controlled by:
 
 - `PRESIGN_EXPIRY_SECONDS` environment variable, or
-- Default value: 78 days (6,739,200 seconds)
+- Default value: 90 days (7,776,000 seconds, Railway max)
+- Any configured value above 90 days is clamped down to 90 days.
 
 ### curl Example
 
@@ -273,7 +275,7 @@ curl -X GET https://your-api-domain.com/health \
 Key variables used by the server:
 
 - `PRESIGN_API_KEY` – Required. API key used for all endpoints.
-- `PRESIGN_EXPIRY_SECONDS` – Optional. Presign expiry in seconds (defaults to 6,739,200 = 78 days).
+- `PRESIGN_EXPIRY_SECONDS` – Optional. Presign expiry in seconds (defaults to 7,776,000 = 90 days, Railway max). Values above 7,776,000 are clamped.
 - `S3_ENDPOINT` – S3-compatible endpoint URL.
 - `S3_ACCESS_KEY_ID` – Access key.
 - `S3_SECRET_ACCESS_KEY` – Secret key.

@@ -10,7 +10,11 @@ const app = express();
 app.use(express.json());
 
 const PRESIGN_API_KEY = process.env.PRESIGN_API_KEY;
-const PRESIGN_EXPIRY_SECONDS = Number(process.env.PRESIGN_EXPIRY_SECONDS) || 6739200; // 78 days default
+const MAX_PRESIGN_EXPIRY_SECONDS = 90 * 24 * 60 * 60; // 90 days (Railway max)
+const PRESIGN_EXPIRY_SECONDS = Math.min(
+  Number(process.env.PRESIGN_EXPIRY_SECONDS) || MAX_PRESIGN_EXPIRY_SECONDS,
+  MAX_PRESIGN_EXPIRY_SECONDS,
+);
 
 if (!PRESIGN_API_KEY) {
   console.error('PRESIGN_API_KEY is required');
