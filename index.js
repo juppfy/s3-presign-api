@@ -78,7 +78,7 @@ app.post('/upload-from-url', async (req, res) => {
 
     const objectKey = `${safePrefix}/${randomId}-${filenameFromUrl}`;
 
-    const response = await fetch(url);
+    const response = await fetch(url);\n\n    const arrayBuffer = await response.arrayBuffer();\n    const bodyBuffer = Buffer.from(arrayBuffer);
 
     if (!response.ok || !response.body) {
       return res.status(502).json({
@@ -94,7 +94,7 @@ app.post('/upload-from-url', async (req, res) => {
     const putCommand = new PutObjectCommand({
       Bucket: BUCKET,
       Key: objectKey,
-      Body: response.body,
+      Body: bodyBuffer,\n      ContentLength: bodyBuffer.length,
       ContentType: contentType,
       ContentLength: Number.isFinite(contentLength) ? contentLength : undefined,
     });
