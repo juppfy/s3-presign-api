@@ -1,14 +1,17 @@
 require('dotenv').config();
 
 const express = require('express');
-const { S3Client, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const crypto = require('crypto');
+const path = require('path');
+const fetch = require('node-fetch');
+const { S3Client, GetObjectCommand, DeleteObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 const app = express();
 app.use(express.json());
 
 const PRESIGN_API_KEY = process.env.PRESIGN_API_KEY;
-const PRESIGN_EXPIRY_SECONDS = Number(process.env.PRESIGN_EXPIRY_SECONDS) || 604800; // 7 days default
+const PRESIGN_EXPIRY_SECONDS = Number(process.env.PRESIGN_EXPIRY_SECONDS) || 6739200; // 78 days default
 
 if (!PRESIGN_API_KEY) {
   console.error('PRESIGN_API_KEY is required');
@@ -41,6 +44,81 @@ function requireAuth(req, res, next) {
 }
 
 app.use(requireAuth);
+
+app.post('/upload-from-url', async (req, res) => {
+  try {
+    const { url, keyPrefix } = req.body;
+
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'Body must include "url" (source file URL to download)',
+      });
+    }
+
+    let parsed;
+    try {
+      parsed = new URL(url);
+    } catch {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'Invalid URL provided in "url"',
+      });
+    }
+
+    const filenameFromUrl = path.basename(parsed.pathname) || 'file';
+    const randomId = crypto.randomBytes(16).toString('hex');
+    const safePrefix =
+      typeof keyPrefix === 'string' && keyPrefix.trim().length > 0
+        ? keyPrefix.trim().replace(/^\/+|\/+$/g, '')
+        : 'uploads';
+
+    const objectKey = `${safePrefix}/${randomId}-${filenameFromUrl}`;
+
+    const response = await fetch(url);
+
+    if (!response.ok || !response.body) {
+      return res.status(502).json({
+        error: 'Bad Gateway',
+        message: `Failed to download file from URL (status ${response.status})`,
+      });
+    }
+
+    const contentType = response.headers.get('content-type') || 'application/octet-stream';
+    const contentLengthHeader = response.headers.get('content-length');
+    const contentLength = contentLengthHeader ? Number(contentLengthHeader) : undefined;
+
+    const putCommand = new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: objectKey,
+      Body: response.body,
+      ContentType: contentType,
+      ContentLength: Number.isFinite(contentLength) ? contentLength : undefined,
+    });
+
+    await s3Client.send(putCommand);
+
+    const getCommand = new GetObjectCommand({
+      Bucket: BUCKET,
+      Key: objectKey,
+    });
+
+    const presignedUrl = await getSignedUrl(s3Client, getCommand, { expiresIn: PRESIGN_EXPIRY_SECONDS });
+
+    return res.json({
+      key: objectKey,
+      url: presignedUrl,
+      bucket: BUCKET,
+      expiresInSeconds: PRESIGN_EXPIRY_SECONDS,
+    });
+  } catch (err) {
+    console.error('Upload-from-url error:', err);
+    return res.status(500).json({
+      error: 'Internal Server Error',
+      message: err.message || 'Failed to upload file from URL',
+    });
+  }
+});
 
 app.post('/presign', async (req, res) => {
   try {

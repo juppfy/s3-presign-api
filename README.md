@@ -22,6 +22,7 @@ npm start
 
 ## Endpoints
 
+- `POST /upload-from-url` — Body: `{ "url": "https://example.com/file.mp3", "keyPrefix": "optional/prefix" }`. Downloads the file from the given URL, uploads it to the configured S3 bucket, and returns a presigned URL and the S3 key. Presign expiry uses `PRESIGN_EXPIRY_SECONDS` (default 78 days). Requires `Authorization` header.
 - `POST /presign` — Body: `{ "key": "path/to/object" }`. Returns `{ "url": "..." }`. Requires `Authorization` header.
 - `DELETE /delete` — Body: `{ "key": "path/to/object" }`. Deletes the specified file from S3. Returns `{ "success": true, "message": "...", "key": "..." }`. Requires `Authorization` header.
 - `GET /health` — Returns `{ "ok": true }`. Same auth.
